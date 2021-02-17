@@ -21,9 +21,9 @@ FusionEKF::FusionEKF() {
   VectorXd x(4);
   x << 0,0,0,0;
 
-  // transition matrix
+  // transition matrix (without dt)
   MatrixXd F(4,4);
-  F << 1,  0,  0, 0,
+  F << 1,  0,  0,  0,
        0,  1,  0,  0,
        0,  0,  1,  0,
        0,  0,  0,  1;
@@ -195,8 +195,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       auto m4 = m1 * m2;
 
       h << m2,
-          0, // atan2(y, x),    // The difference is set to z[1]
-          m3 / m2;
+            0, // atan2(y, x),    // The difference is set in z[1]
+            m3 / m2;
 
       Hj << x / m2, y / m2, 0, 0,
             -y / m1, x / m1, 0, 0,
