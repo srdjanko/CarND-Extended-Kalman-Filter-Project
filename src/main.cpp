@@ -40,7 +40,10 @@ int main() {
   vector<VectorXd> estimations;
   vector<VectorXd> ground_truth;
 
-  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth]
+  // Number of measurements which are not used for performance estimation
+  int measurement_settle_count = 5;
+
+  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth,&measurement_settle_count]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -105,8 +108,7 @@ int main() {
           gt_values(1) = y_gt; 
           gt_values(2) = vx_gt;
           gt_values(3) = vy_gt;
-          ground_truth.push_back(gt_values);
-          
+
           // Call ProcessMeasurement(meas_package) for Kalman filter
           fusionEKF.ProcessMeasurement(meas_package);       
 
@@ -124,10 +126,21 @@ int main() {
           estimate(1) = p_y;
           estimate(2) = v1;
           estimate(3) = v2;
-        
-          estimations.push_back(estimate);
 
-          VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
+          VectorXd RMSE(4);
+
+          // calculate RMSE once the measurement has settled
+          if(measurement_settle_count > 0)
+          {
+            RMSE << 0,0,0,0;
+            measurement_settle_count--;
+          }
+          else
+          {
+            ground_truth.push_back(gt_values);
+            estimations.push_back(estimate);
+            RMSE = tools.CalculateRMSE(estimations, ground_truth);
+          }
 
           json msgJson;
           msgJson["estimate_x"] = p_x;
@@ -137,7 +150,6 @@ int main() {
           msgJson["rmse_vx"] = RMSE(2);
           msgJson["rmse_vy"] = RMSE(3);
           auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
-          // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
         }  // end "telemetry" if
