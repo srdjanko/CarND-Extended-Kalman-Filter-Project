@@ -30,10 +30,10 @@ FusionEKF::FusionEKF() {
 
   // state covariance matrix P
   MatrixXd P(4, 4);
-  P << 10, 0, 0, 0,
-       0, 10, 0, 0,
-       0, 0, 100, 0,
-       0, 0, 0, 100;
+  P << 1, 0, 0, 0,
+       0, 1, 0, 0,
+       0, 0, 1000, 0,
+       0, 0, 0, 1000;
 
   // measurement matrix for laser measurements
   H_laser_ = MatrixXd(2, 4);
@@ -109,6 +109,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
                 0,
                 0;
     }
+
+    previous_timestamp_ = measurement_pack.timestamp_;
 
     // done initializing, no need to predict or update
     is_initialized_ = true;
